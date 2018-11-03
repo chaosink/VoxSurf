@@ -22,6 +22,7 @@ voxels as a 3D array of booleans (e.g. use blocking or an octree).
 
 #include <LibSL/LibSL.h>
 
+#include <sstream>
 #include <iostream>
 #include <algorithm>
 using namespace std;
@@ -30,18 +31,14 @@ using namespace std;
 
 // --------------------------------------------------------------
 
-#define VOXEL_RESOLUTION 128
-
-// --------------------------------------------------------------
-
 #define FP_POW    16
 #define FP_SCALE  (1<<FP_POW)
-#define BOX_SCALE v3f(VOXEL_RESOLUTION*FP_SCALE)
+#define BOX_SCALE v3f(resolution_max*FP_SCALE)
 
 // --------------------------------------------------------------
 
 // saves a voxel file (.vox format, can be imported by MagicaVoxel)
-void saveAsVox(const char *fname, const Array3D<bool>& voxs)
+void saveAsVox(const char *fname, const Array3D<bool>& voxs, const v3f &translate, float voxel_size)
 {
   Array<v3b> palette(256); // RGB palette
   palette.fill(0);
@@ -53,9 +50,16 @@ void saveAsVox(const char *fname, const Array3D<bool>& voxs)
   fwrite(&sx, 4, 1, f);
   fwrite(&sy, 4, 1, f);
   fwrite(&sz, 4, 1, f);
+
+  fwrite(&translate[0], 4, 1, f);
+  fwrite(&translate[1], 4, 1, f);
+  fwrite(&translate[2], 4, 1, f);
+
+  fwrite(&voxel_size, 4, 1, f);
+
   ForIndex(i, sx) {
     ForIndex(j, sy) {
-      ForRangeReverse(k, sz - 1, 0) {
+      ForIndex(k, sz) {
         uchar pal = voxs.at(i, j, k) ? 127 : 255;
         fwrite(&pal, sizeof(uchar), 1, f);
       }
@@ -161,18 +165,21 @@ void rasterize(
 
 int main(int argc, char **argv)
 {
-
   try {
-
+    if(argc < 3) {
+      cout << "Usage: VoxSurf resolution model.stl" << endl;
+      return 0;
+    }
+    int resolution_max = atoi(argv[1]);
     // load triangle mesh
-    TriangleMesh_Ptr mesh(loadTriangleMesh(SRC_PATH "/model.stl"));    
+    TriangleMesh_Ptr mesh(loadTriangleMesh(argv[2]));
     // produce (fixed fp) integer vertices and triangles
     std::vector<v3i> pts;
     std::vector<v3u> tris;
     {
-      m4x4f boxtrsf = scaleMatrix(BOX_SCALE) * translationMatrix(v3f(0.5f))
+      m4x4f boxtrsf = scaleMatrix(BOX_SCALE)
         * scaleMatrix(v3f(0.95f) / tupleMax(mesh->bbox().extent()))
-        * translationMatrix(-mesh->bbox().center());
+        * translationMatrix(-mesh->bbox().minCorner());
       // transform vertices
       pts.resize(mesh->numVertices());
       ForIndex(p, mesh->numVertices()) {
@@ -188,9 +195,10 @@ int main(int argc, char **argv)
         tris.push_back(tri);
       }
     }
-    
+
+    v3u resolution(mesh->bbox().extent() / tupleMax(mesh->bbox().extent()) * float(resolution_max));
     // rasterize into voxels
-    Array3D<bool> voxs(VOXEL_RESOLUTION, VOXEL_RESOLUTION, VOXEL_RESOLUTION);
+    Array3D<bool> voxs(resolution);
     voxs.fill(false);
     {
       Timer tm("rasterization");
@@ -206,8 +214,9 @@ int main(int argc, char **argv)
     }
 
     // save the result
-    saveAsVox(SRC_PATH "/out.vox", voxs);
-
+    stringstream ss;
+    ss << resolution_max;
+    saveAsVox((string(argv[1]) + "_" + ss.str() + ".vox").c_str(), voxs, mesh->bbox().minCorner(), tupleMax(mesh->bbox().extent()) /  0.95f / resolution_max);
   } catch (Fatal& e) {
     cerr << "[ERROR] " << e.message() << endl;
   }
