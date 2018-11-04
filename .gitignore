@@ -1,5 +1,5 @@
-build
-
-out.vox
-
 path.h
+
+*build*
+
+*.vox
