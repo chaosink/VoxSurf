@@ -195,7 +195,7 @@ int main(int argc, char **argv) {
 		Array3D<bool> voxs(resolution);
 		voxs.fill(false);
 		{
-			Timer tm("rasterization");
+			Timer tm("Rasterization");
 			Console::progressTextInit((int)tris.size());
 			ForIndex(t, tris.size()) {
 				Console::progressTextUpdate(t);
@@ -204,13 +204,15 @@ int main(int argc, char **argv) {
 				rasterize<swizzle_zxy>(tris[t], pts, voxs); // zx view
 			}
 			Console::progressTextEnd();
-			cerr << endl;
 		}
 
 		// save the result
 		stringstream ss;
 		ss << resolution_max;
-		saveAsVox((string(argv[2]) + "_" + ss.str() + ".vox").c_str(), voxs, mesh->bbox().minCorner(), tupleMax(mesh->bbox().extent()) / 0.95f / resolution_max);
+		{
+			Timer tm("Save Vox file");
+			saveAsVox((string(argv[2]) + "_" + ss.str() + ".vox").c_str(), voxs, mesh->bbox().minCorner(), tupleMax(mesh->bbox().extent()) / 0.95f / resolution_max);
+		}
 	} catch (Fatal& e) {
 		cerr << "[ERROR] " << e.message() << endl;
 	}
