@@ -216,7 +216,7 @@ int main(int argc, char **argv)
     // save the result
     stringstream ss;
     ss << resolution_max;
-    saveAsVox((string(argv[1]) + "_" + ss.str() + ".vox").c_str(), voxs, mesh->bbox().minCorner(), tupleMax(mesh->bbox().extent()) /  0.95f / resolution_max);
+    saveAsVox((string(argv[2]) + "_" + ss.str() + ".vox").c_str(), voxs, mesh->bbox().minCorner(), tupleMax(mesh->bbox().extent()) /  0.95f / resolution_max);
   } catch (Fatal& e) {
     cerr << "[ERROR] " << e.message() << endl;
   }
