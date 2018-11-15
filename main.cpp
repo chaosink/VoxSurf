@@ -50,11 +50,11 @@ void saveAsVox(const char *fname, const Array3D<bool>& voxs, const v3f &translat
 	fwrite(&sy, 4, 1, f);
 	fwrite(&sz, 4, 1, f);
 
-	fwrite(&translate[0], 4, 1, f);
-	fwrite(&translate[1], 4, 1, f);
-	fwrite(&translate[2], 4, 1, f);
+	// fwrite(&translate[0], 4, 1, f);
+	// fwrite(&translate[1], 4, 1, f);
+	// fwrite(&translate[2], 4, 1, f);
 
-	fwrite(&voxel_size, 4, 1, f);
+	// fwrite(&voxel_size, 4, 1, f);
 
 	ForIndex(i, sx) {
 		ForIndex(j, sy) {
